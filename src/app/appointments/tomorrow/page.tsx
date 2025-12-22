@@ -119,7 +119,9 @@ export default function TomorrowAppointmentsPage() {
             </svg>
           </button>
           <div>
-            <h1 className="text-xl font-bold text-slate-800">Citas de Mañana</h1>
+            <h1 className="text-xl font-bold text-slate-800">
+              Citas de Mañana - {new Date(new Date().setDate(new Date().getDate() + 1)).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+            </h1>
             <p className="text-sm text-slate-600">{appointments.length} cita{appointments.length !== 1 ? 's' : ''}</p>
           </div>
         </div>
@@ -155,11 +157,19 @@ export default function TomorrowAppointmentsPage() {
                         <h3 className="text-lg font-bold text-slate-800">
                           {appointment.patients.nombre} {appointment.patients.apellido}
                         </h3>
-                        <div className="flex items-center gap-2 mt-1 text-sm text-slate-600">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                          </svg>
-                          <span>{time}</span>
+                        <div className="mt-1 text-sm text-slate-600">
+                          <div className="flex items-center gap-2">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                            </svg>
+                            <span>{new Date(appointment.fecha_hora).toLocaleDateString('es-CO', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex items-center gap-2 mt-1">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            <span>{time}</span>
+                          </div>
                         </div>
                         <span className={`inline-block mt-2 px-3 py-1 rounded-full text-xs font-medium ${getEstadoColor(appointment.estado)}`}>
                           {getEstadoText(appointment.estado)}
