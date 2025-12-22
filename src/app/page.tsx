@@ -46,6 +46,13 @@ export default function LoginPage() {
     <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
       <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
         <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <img 
+              src="/Logo_FisioCasa.png" 
+              alt="Fisioterapia en Casa Logo" 
+              className="h-13 w-auto"
+            />
+          </div>
           <h1 className="text-3xl font-bold text-slate-800">Fisioterapia en Casa</h1>
           <p className="text-slate-600 mt-2">Acceso para Terapeutas</p>
         </div>
