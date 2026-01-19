@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { useEffect, useState } from 'react'
 
 interface Patient {
@@ -33,6 +34,45 @@ export default function TomorrowAppointmentsPage() {
 
   useEffect(() => {
     loadAppointments()
+
+    // Subscripción a cambios en tiempo real
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('appointments-tomorrow-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointments'
+        },
+        async (payload) => {
+          console.log('Nueva cita detectada (mañana):', payload)
+          
+          // Verificar si la cita es para mañana y para el usuario actual
+          const newAppointment = payload.new as any
+          const appointmentDate = new Date(newAppointment.fecha_hora)
+          const tomorrow = new Date()
+          tomorrow.setDate(tomorrow.getDate() + 1)
+          
+          // Comparar solo fecha (sin hora)
+          const isTomorrow = appointmentDate.getDate() === tomorrow.getDate() &&
+                            appointmentDate.getMonth() === tomorrow.getMonth() &&
+                            appointmentDate.getFullYear() === tomorrow.getFullYear()
+          
+          if (isTomorrow) {
+            // Recargar todas las citas para obtener datos completos con relaciones
+            await loadAppointments()
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup: Desuscribirse cuando el componente se desmonte
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   const loadAppointments = async () => {

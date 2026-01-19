@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { GPSCapture } from '@/components/GPSCapture'
 import { checkIn, checkOut, getAttendanceByAppointment } from '@/lib/api/attendance'
+import { createClient } from '@/lib/supabase/client'
 
 interface Patient {
   nombre: string
@@ -50,6 +51,44 @@ export default function TodayAppointmentsPage() {
 
   useEffect(() => {
     loadAppointments()
+
+    // Subscripción a cambios en tiempo real
+    const supabase = createClient()
+    
+    const channel = supabase
+      .channel('appointments-today-changes')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'appointments'
+        },
+        async (payload) => {
+          console.log('Nueva cita detectada:', payload)
+          
+          // Verificar si la cita es para hoy y para el usuario actual
+          const newAppointment = payload.new as any
+          const appointmentDate = new Date(newAppointment.fecha_hora)
+          const today = new Date()
+          
+          // Comparar solo fecha (sin hora)
+          const isToday = appointmentDate.getDate() === today.getDate() &&
+                         appointmentDate.getMonth() === today.getMonth() &&
+                         appointmentDate.getFullYear() === today.getFullYear()
+          
+          if (isToday) {
+            // Recargar todas las citas para obtener datos completos con relaciones
+            await loadAppointments()
+          }
+        }
+      )
+      .subscribe()
+
+    // Cleanup: Desuscribirse cuando el componente se desmonte
+    return () => {
+      supabase.removeChannel(channel)
+    }
   }, [])
 
   // Timer para actualizar tiempos transcurridos
