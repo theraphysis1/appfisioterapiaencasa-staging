@@ -196,18 +196,12 @@ export default function TodayAppointmentsPage() {
     const result = await checkOut(appointmentId, latitude, longitude)
 
     if (result.success) {
-      let message = '✅ Salida registrada'
-      
-      if (result.data?.alertas && result.data.alertas.length > 0) {
-        message += '\n' + result.data.alertas.join('\n')
-      }
-      
-      setSuccessMessages(prev => ({ ...prev, [appointmentId]: message }))
+      setSuccessMessages(prev => ({ ...prev, [appointmentId]: '✅ Salida registrada' }))
       await loadAppointments()
       
       setTimeout(() => {
         setSuccessMessages(prev => ({ ...prev, [appointmentId]: '' }))
-      }, 5000)
+      }, 3000)
     } else {
       setErrors(prev => ({ ...prev, [appointmentId]: result.error || 'Error al registrar salida' }))
     }
@@ -356,15 +350,11 @@ export default function TodayAppointmentsPage() {
                         <GPSCapture
                           onSuccess={(lat, lng) => handleCheckInSuccess(appointment.id, lat, lng)}
                           onError={(error) => handleCheckInError(appointment.id, error)}
-                          buttonText="📍 REGISTRAR LLEGADA"
-                          loadingText="Obteniendo GPS..."
+                          buttonText="REGISTRAR LLEGADA"
+                          loadingText="Obteniendo Datos..."
                           disabled={isProcessing}
-                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-blue-600 text-white hover:bg-blue-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
                         />
-                        <div className="bg-slate-100 rounded p-2 text-xs text-slate-600">
-                          <p className="font-medium">Estado: Sin registrar</p>
-                          <p className="mt-1">⚠️ Debes estar en la ubicación del paciente para registrar</p>
-                        </div>
                       </div>
                     )}
 
@@ -372,22 +362,16 @@ export default function TodayAppointmentsPage() {
                     {attendance?.llegada_registrada && !attendance?.salida_registrada && (
                       <div className="space-y-2">
                         <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-green-800 font-medium text-sm">✅ Llegada: {formatTime(attendance.hora_llegada_real!)}</p>
-                          <p className="text-green-700 text-xs mt-1">Ubicación verificada</p>
-                        </div>
-
-                        <div className="bg-blue-50 rounded-lg p-3 text-center">
-                          <p className="text-blue-800 font-medium text-sm">⏱️ Tiempo en sesión:</p>
-                          <p className="text-2xl font-bold text-blue-600 mt-1">{elapsedTime} min</p>
+                          <p className="text-green-800 font-medium text-sm">✅ Llegada registrada</p>
                         </div>
 
                         <GPSCapture
                           onSuccess={(lat, lng) => handleCheckOutSuccess(appointment.id, lat, lng)}
                           onError={(error) => handleCheckOutError(appointment.id, error)}
-                          buttonText="🚪 REGISTRAR SALIDA"
-                          loadingText="Obteniendo GPS..."
+                          buttonText="REGISTRAR SALIDA"
+                          loadingText="Obteniendo Datos..."
                           disabled={isProcessing}
-                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-green-600 text-white hover:bg-green-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-red-600 text-white hover:bg-red-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
                         />
                       </div>
                     )}
@@ -395,21 +379,7 @@ export default function TodayAppointmentsPage() {
                     {/* Sección GPS - SIEMPRE VISIBLE - Completada */}
                     {attendance?.registro_completo && (
                       <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                        <p className="text-green-800 font-bold text-sm mb-2">✅ Sesión Completada</p>
-                        <div className="space-y-1 text-xs">
-                          <div className="flex justify-between">
-                            <span className="text-green-700">Llegada:</span>
-                            <span className="font-medium text-green-800">{formatTime(attendance.hora_llegada_real!)}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-green-700">Salida:</span>
-                            <span className="font-medium text-green-800">{formatTime(attendance.hora_salida_real!)}</span>
-                          </div>
-                          <div className="flex justify-between pt-1 border-t border-green-200">
-                            <span className="text-green-700">Duración:</span>
-                            <span className="font-bold text-green-800">{attendance.duracion_real_minutos} minutos</span>
-                          </div>
-                        </div>
+                        <p className="text-green-800 font-bold text-sm">✅ Sesión Completada</p>
                       </div>
                     )}
 
