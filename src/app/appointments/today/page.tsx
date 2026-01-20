@@ -5,6 +5,7 @@ import { useEffect, useState } from 'react'
 import { GPSCapture } from '@/components/GPSCapture'
 import { checkIn, checkOut, getAttendanceByAppointment } from '@/lib/api/attendance'
 import { createClient } from '@/lib/supabase/client'
+import { useAttendanceRealtime } from '@/hooks/useAttendanceRealtime'
 
 interface Patient {
   nombre: string
@@ -51,6 +52,33 @@ export default function TodayAppointmentsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [successMessages, setSuccessMessages] = useState<Record<string, string>>({})
   const [elapsedTimes, setElapsedTimes] = useState<Record<string, number>>({})
+
+  // Manejar cancelaciones en tiempo real
+  const handleCancellation = async (appointmentId: string, razon: string | null) => {
+    console.log('🔄 Procesando cancelación en tiempo real para:', appointmentId)
+    
+    // Actualizar el registro de asistencia en el estado local
+    setAppointments(prev => prev.map(apt => {
+      if (apt.id === appointmentId && apt.attendance) {
+        return {
+          ...apt,
+          attendance: {
+            ...apt.attendance,
+            cancelada_por_admin: true,
+            razon_cancelacion: razon,
+            fecha_cancelacion: new Date().toISOString()
+          }
+        }
+      }
+      return apt
+    }))
+
+    // NO mostrar mensaje temporal - el mensaje permanente ya se muestra automáticamente
+    // La UI se actualiza sola cuando cambia el estado de appointments
+  }
+
+  // Activar hook de realtime
+  useAttendanceRealtime(handleCancellation)
 
   useEffect(() => {
     loadAppointments()
@@ -351,11 +379,6 @@ export default function TodayAppointmentsPage() {
                     {attendance?.cancelada_por_admin ? (
                       <div className="bg-slate-100 border border-slate-300 rounded-lg p-4">
                         <p className="text-slate-800 font-bold text-sm">❌ Cancelada por administrador</p>
-                        {attendance.razon_cancelacion && (
-                          <p className="text-slate-600 text-xs mt-2">
-                            Razón: {attendance.razon_cancelacion}
-                          </p>
-                        )}
                       </div>
                     ) : (
                       <>
@@ -365,10 +388,10 @@ export default function TodayAppointmentsPage() {
                             <GPSCapture
                               onSuccess={(lat, lng) => handleCheckInSuccess(appointment.id, lat, lng)}
                               onError={(error) => handleCheckInError(appointment.id, error)}
-                              buttonText="📍 REGISTRAR LLEGADA"
-                              loadingText="Obteniendo GPS..."
+                              buttonText="REGISTRAR LLEGADA"
+                              loadingText="Obteniendo Datos..."
                               disabled={isProcessing}
-                              className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                              className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-indigo-600 text-white hover:bg-indigo-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
                           </div>
                         )}
@@ -383,8 +406,8 @@ export default function TodayAppointmentsPage() {
                             <GPSCapture
                               onSuccess={(lat, lng) => handleCheckOutSuccess(appointment.id, lat, lng)}
                               onError={(error) => handleCheckOutError(appointment.id, error)}
-                              buttonText="🚪 REGISTRAR SALIDA"
-                              loadingText="Obteniendo GPS..."
+                              buttonText="REGISTRAR SALIDA"
+                              loadingText="Obteniendo Datos..."
                               disabled={isProcessing}
                               className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-red-600 text-white hover:bg-red-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
                             />
