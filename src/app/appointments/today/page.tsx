@@ -442,7 +442,7 @@ export default function TodayAppointmentsPage() {
 
                   {/* Expanded Content - Detalles adicionales */}
                   {isExpanded && (
-                    <div className="border-t border-slate-200 p-4 bg-slate-50 space-y-3">
+                    <div className="border-t border-slate-200 p-4 bg-white space-y-3">
                       <div>
                         <p className="text-xs font-medium text-slate-500 uppercase mb-1">Servicio</p>
                         <p className="text-slate-800">{appointment.services.nombre}</p>

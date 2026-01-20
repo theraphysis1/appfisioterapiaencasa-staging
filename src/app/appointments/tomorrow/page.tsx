@@ -228,7 +228,7 @@ export default function TomorrowAppointmentsPage() {
 
                   {/* Expanded Content */}
                   {isExpanded && (
-                    <div className="border-t border-slate-200 p-4 bg-slate-50">
+                    <div className="border-t border-slate-200 p-4 bg-white">
                       <div className="space-y-3">
                         <div>
                           <p className="text-xs font-medium text-slate-500 uppercase mb-1">Servicio</p>
