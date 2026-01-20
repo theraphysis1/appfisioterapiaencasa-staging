@@ -85,6 +85,9 @@ export async function GET(request: Request) {
         salida_registrada: record.salida_registrada,
         distancia_llegada_metros: record.distancia_llegada_metros,
         distancia_salida_metros: record.distancia_salida_metros,
+        cancelada_por_admin: record.cancelada_por_admin,
+        razon_cancelacion: record.razon_cancelacion,
+        fecha_cancelacion: record.fecha_cancelacion,
         created_at: record.created_at,
         updated_at: record.updated_at
       }

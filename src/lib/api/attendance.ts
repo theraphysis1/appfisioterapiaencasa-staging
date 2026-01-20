@@ -34,6 +34,9 @@ interface AttendanceRecord {
   salida_registrada: boolean
   distancia_llegada_metros: number | null
   distancia_salida_metros: number | null
+  cancelada_por_admin: boolean
+  razon_cancelacion: string | null
+  fecha_cancelacion: string | null
 }
 
 /**

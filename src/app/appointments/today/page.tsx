@@ -26,6 +26,9 @@ interface AttendanceRecord {
   llegada_registrada: boolean
   salida_registrada: boolean
   registro_completo: boolean
+  cancelada_por_admin: boolean
+  razon_cancelacion: string | null
+  fecha_cancelacion: string | null
 }
 
 interface Appointment {
@@ -344,43 +347,57 @@ export default function TodayAppointmentsPage() {
                       </div>
                     )}
 
-                    {/* Sección GPS - SIEMPRE VISIBLE - Sin registro */}
-                    {!attendance?.llegada_registrada && (
-                      <div className="space-y-2">
-                        <GPSCapture
-                          onSuccess={(lat, lng) => handleCheckInSuccess(appointment.id, lat, lng)}
-                          onError={(error) => handleCheckInError(appointment.id, error)}
-                          buttonText="REGISTRAR LLEGADA"
-                          loadingText="Obteniendo Datos..."
-                          disabled={isProcessing}
-                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
-                        />
+                    {/* Sección GPS - Cancelada por admin */}
+                    {attendance?.cancelada_por_admin ? (
+                      <div className="bg-slate-100 border border-slate-300 rounded-lg p-4">
+                        <p className="text-slate-800 font-bold text-sm">❌ Cancelada por administrador</p>
+                        {attendance.razon_cancelacion && (
+                          <p className="text-slate-600 text-xs mt-2">
+                            Razón: {attendance.razon_cancelacion}
+                          </p>
+                        )}
                       </div>
-                    )}
+                    ) : (
+                      <>
+                        {/* Sección GPS - SIEMPRE VISIBLE - Sin registro */}
+                        {!attendance?.llegada_registrada && (
+                          <div className="space-y-2">
+                            <GPSCapture
+                              onSuccess={(lat, lng) => handleCheckInSuccess(appointment.id, lat, lng)}
+                              onError={(error) => handleCheckInError(appointment.id, error)}
+                              buttonText="📍 REGISTRAR LLEGADA"
+                              loadingText="Obteniendo GPS..."
+                              disabled={isProcessing}
+                              className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-orange-600 text-white hover:bg-orange-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        )}
 
-                    {/* Sección GPS - SIEMPRE VISIBLE - Llegada registrada */}
-                    {attendance?.llegada_registrada && !attendance?.salida_registrada && (
-                      <div className="space-y-2">
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                          <p className="text-green-800 font-medium text-sm">✅ Llegada registrada</p>
-                        </div>
+                        {/* Sección GPS - SIEMPRE VISIBLE - Llegada registrada */}
+                        {attendance?.llegada_registrada && !attendance?.salida_registrada && (
+                          <div className="space-y-2">
+                            <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                              <p className="text-green-800 font-medium text-sm">✅ Llegada registrada</p>
+                            </div>
 
-                        <GPSCapture
-                          onSuccess={(lat, lng) => handleCheckOutSuccess(appointment.id, lat, lng)}
-                          onError={(error) => handleCheckOutError(appointment.id, error)}
-                          buttonText="REGISTRAR SALIDA"
-                          loadingText="Obteniendo Datos..."
-                          disabled={isProcessing}
-                          className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-red-600 text-white hover:bg-red-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
-                        />
-                      </div>
-                    )}
+                            <GPSCapture
+                              onSuccess={(lat, lng) => handleCheckOutSuccess(appointment.id, lat, lng)}
+                              onError={(error) => handleCheckOutError(appointment.id, error)}
+                              buttonText="🚪 REGISTRAR SALIDA"
+                              loadingText="Obteniendo GPS..."
+                              disabled={isProcessing}
+                              className="w-full py-2.5 px-4 rounded-lg font-medium text-sm transition-colors bg-red-600 text-white hover:bg-red-700 disabled:bg-slate-300 disabled:text-slate-500 disabled:cursor-not-allowed"
+                            />
+                          </div>
+                        )}
 
-                    {/* Sección GPS - SIEMPRE VISIBLE - Completada */}
-                    {attendance?.registro_completo && (
-                      <div className="bg-green-50 border border-green-200 rounded-lg p-3">
-                        <p className="text-green-800 font-bold text-sm">✅ Sesión Completada</p>
-                      </div>
+                        {/* Sección GPS - SIEMPRE VISIBLE - Completada */}
+                        {attendance?.registro_completo && (
+                          <div className="bg-green-50 border border-green-200 rounded-lg p-3">
+                            <p className="text-green-800 font-bold text-sm">✅ Sesión Completada</p>
+                          </div>
+                        )}
+                      </>
                     )}
 
                     {/* Botón para expandir detalles adicionales */}
