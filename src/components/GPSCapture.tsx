@@ -57,7 +57,7 @@ export function GPSCapture({
       },
       {
         enableHighAccuracy: true,
-        timeout: 10000,
+        timeout: 300000,
         maximumAge: 0
       }
     )
