@@ -55,7 +55,6 @@ export async function POST(request: Request) {
     let patient_id = null
     let patient_lat = null
     let patient_lng = null
-    let should_update_patient_coords = false
 
     if (appointment_id) {
       const { data: appointment, error: appointmentError } = await supabase
@@ -64,6 +63,8 @@ export async function POST(request: Request) {
           id,
           therapist_id,
           patient_id,
+          direccion_lat_override,
+          direccion_lng_override,
           patients (
             id,
             direccion_lat,
@@ -94,15 +95,10 @@ export async function POST(request: Request) {
       const patientData = Array.isArray(appointment.patients) 
         ? appointment.patients[0] 
         : appointment.patients
-      
-      patient_lat = patientData?.direccion_lat
-      patient_lng = patientData?.direccion_lng
 
-      // Si el paciente NO tiene coordenadas, las guardaremos después
-      if (!patient_lat || !patient_lng) {
-        should_update_patient_coords = true
-        console.log(`Paciente ${patient_id} sin coordenadas. Se guardarán las del check-in.`)
-      }
+      // ✅ USAR COORDENADAS OVERRIDE SI EXISTEN, SINO USAR LAS DEL PACIENTE
+      patient_lat = appointment.direccion_lat_override || patientData?.direccion_lat
+      patient_lng = appointment.direccion_lng_override || patientData?.direccion_lng
     }
 
     // 5. VERIFICAR QUE NO EXISTA REGISTRO PREVIO DE LLEGADA
@@ -156,26 +152,6 @@ export async function POST(request: Request) {
         )
       }
     }
-
-    // 6.5. ACTUALIZAR COORDENADAS DEL PACIENTE SI ES NECESARIO
-    if (should_update_patient_coords && patient_id) {
-      const { error: updateError } = await supabase
-        .from('patients')
-        .update({
-          direccion_lat: latitude,
-          direccion_lng: longitude
-        })
-        .eq('id', patient_id)
-
-      if (updateError) {
-        console.error('Error actualizando coordenadas del paciente:', updateError)
-        // No fallar el check-in si no se pudieron actualizar las coordenadas
-        // Solo logueamos el error
-      } else {
-        console.log(`Coordenadas guardadas para paciente ${patient_id}: ${latitude}, ${longitude}`)
-      }
-    }
-
     // 7. OBTENER IP DEL REQUEST
     const ip_address = request.headers.get('x-forwarded-for') || 
                       request.headers.get('x-real-ip') || 
@@ -191,6 +167,8 @@ export async function POST(request: Request) {
       hora_llegada_real: now,
       ubicacion_llegada_lat: latitude,
       ubicacion_llegada_lng: longitude,
+      direccion_lat_paciente: patient_lat,
+      direccion_lng_paciente: patient_lng,
       device_model_llegada: device_model,
       device_fingerprint_llegada: device_fingerprint,
       user_agent_llegada: user_agent || null,

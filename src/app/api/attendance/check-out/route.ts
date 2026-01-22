@@ -86,6 +86,8 @@ export async function POST(request: Request) {
       .select(`
         id,
         patient_id,
+        direccion_lat_override,
+        direccion_lng_override,
         patients (
           id,
           direccion_lat,
@@ -106,8 +108,9 @@ export async function POST(request: Request) {
       ? appointment.patients[0] 
       : appointment.patients
     
-    const patient_lat = patientData?.direccion_lat
-    const patient_lng = patientData?.direccion_lng
+    // Usar coordenadas override si existen, sino usar las del paciente
+    const patient_lat = appointment.direccion_lat_override || patientData?.direccion_lat
+    const patient_lng = appointment.direccion_lng_override || patientData?.direccion_lng
 
     // 6. CALCULAR DISTANCIA GPS
     let distancia_metros = null
