@@ -41,6 +41,11 @@ interface Appointment {
   patients: Patient
   services: Service
   attendance?: AttendanceRecord | null
+  // Campos calculados del backend
+  direccion_final: string
+  barrio_final: string
+  referencia_final: string | null
+  tiene_direccion_temporal: boolean
 }
 
 export default function TodayAppointmentsPage() {
@@ -252,6 +257,14 @@ export default function TodayAppointmentsPage() {
     })
   }
 
+  const getDireccionIcon = (tieneTemporal: boolean) => {
+    return tieneTemporal ? '🏢' : '🏠'
+  }
+
+  const getDireccionTooltip = (tieneTemporal: boolean) => {
+    return tieneTemporal ? 'Dirección temporal' : 'Dirección del domicilio'
+  }
+
   const getEstadoColor = (estado: string) => {
     switch (estado) {
       case 'agendada':
@@ -448,20 +461,35 @@ export default function TodayAppointmentsPage() {
                         <p className="text-slate-800">{appointment.services.nombre}</p>
                       </div>
 
+                      {/* Indicador de tipo de dirección */}
+                      <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+                        <span className="text-2xl" title={getDireccionTooltip(appointment.tiene_direccion_temporal)}>
+                          {getDireccionIcon(appointment.tiene_direccion_temporal)}
+                        </span>
+                        <span className="text-sm font-medium text-slate-600">
+                          {appointment.tiene_direccion_temporal ? 'Dirección temporal' : 'Dirección del domicilio'}
+                        </span>
+                        {appointment.tiene_direccion_temporal && (
+                          <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                            Temporal
+                          </span>
+                        )}
+                      </div>
+
                       <div>
                         <p className="text-xs font-medium text-slate-500 uppercase mb-1">Barrio</p>
-                        <p className="text-slate-800">{appointment.patients.barrio}</p>
+                        <p className="text-slate-800">{appointment.barrio_final}</p>
                       </div>
 
                       <div>
                         <p className="text-xs font-medium text-slate-500 uppercase mb-1">Dirección</p>
-                        <p className="text-slate-800">{appointment.patients.direccion}</p>
+                        <p className="text-slate-800">{appointment.direccion_final}</p>
                       </div>
 
-                      {appointment.patients.referencia && (
+                      {appointment.referencia_final && (
                         <div>
                           <p className="text-xs font-medium text-slate-500 uppercase mb-1">Referencia</p>
-                          <p className="text-slate-800">{appointment.patients.referencia}</p>
+                          <p className="text-slate-800">{appointment.referencia_final}</p>
                         </div>
                       )}
 
