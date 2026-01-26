@@ -6,6 +6,7 @@ import { GPSCapture } from '@/components/GPSCapture'
 import { checkIn, checkOut, getAttendanceByAppointment } from '@/lib/api/attendance'
 import { createClient } from '@/lib/supabase/client'
 import { useAttendanceRealtime } from '@/hooks/useAttendanceRealtime'
+import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 
 interface Patient {
   nombre: string
@@ -57,6 +58,7 @@ export default function TodayAppointmentsPage() {
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [successMessages, setSuccessMessages] = useState<Record<string, string>>({})
   const [elapsedTimes, setElapsedTimes] = useState<Record<string, number>>({})
+  const [therapistId, setTherapistId] = useState<string | null>(null)
 
   // Manejar cancelaciones en tiempo real
   const handleCancellation = async (appointmentId: string, razon: string | null) => {
@@ -82,49 +84,49 @@ export default function TodayAppointmentsPage() {
     // La UI se actualiza sola cuando cambia el estado de appointments
   }
 
+  // Handlers para cambios en appointments
+  const handleAppointmentInsert = async (newAppointment: any) => {
+    console.log('📥 Nueva cita insertada:', newAppointment)
+    // Verificar si es para hoy
+    const appointmentDate = new Date(newAppointment.fecha_hora)
+    const today = new Date()
+    
+    const isToday = appointmentDate.getDate() === today.getDate() &&
+                   appointmentDate.getMonth() === today.getMonth() &&
+                   appointmentDate.getFullYear() === today.getFullYear()
+    
+    if (isToday) {
+      await loadAppointments()
+    }
+  }
+
+  const handleAppointmentUpdate = async (updatedAppointment: any) => {
+    console.log('🔄 Cita actualizada:', updatedAppointment)
+    // Recargar para obtener datos completos con relaciones
+    await loadAppointments()
+  }
+
+  const handleAppointmentDelete = async (appointmentId: string) => {
+    console.log('🗑️ Cita eliminada:', appointmentId)
+    // Eliminar de la lista local
+    setAppointments(prev => prev.filter(apt => apt.id !== appointmentId))
+  }
+
   // Activar hook de realtime
   useAttendanceRealtime(handleCancellation)
 
+  // Activar hook de appointments realtime
+  useAppointmentsRealtime(
+    {
+      onInsert: handleAppointmentInsert,
+      onUpdate: handleAppointmentUpdate,
+      onDelete: handleAppointmentDelete
+    },
+    therapistId || undefined
+  )
+
   useEffect(() => {
     loadAppointments()
-
-    // Subscripción a cambios en tiempo real
-    const supabase = createClient()
-    
-    const channel = supabase
-      .channel('appointments-today-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'appointments'
-        },
-        async (payload) => {
-          console.log('Nueva cita detectada:', payload)
-          
-          // Verificar si la cita es para hoy y para el usuario actual
-          const newAppointment = payload.new as any
-          const appointmentDate = new Date(newAppointment.fecha_hora)
-          const today = new Date()
-          
-          // Comparar solo fecha (sin hora)
-          const isToday = appointmentDate.getDate() === today.getDate() &&
-                         appointmentDate.getMonth() === today.getMonth() &&
-                         appointmentDate.getFullYear() === today.getFullYear()
-          
-          if (isToday) {
-            // Recargar todas las citas para obtener datos completos con relaciones
-            await loadAppointments()
-          }
-        }
-      )
-      .subscribe()
-
-    // Cleanup: Desuscribirse cuando el componente se desmonte
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
 
   // Timer para actualizar tiempos transcurridos
@@ -177,6 +179,15 @@ export default function TodayAppointmentsPage() {
 
       const data = await response.json()
       const appointmentsData = data.appointments
+
+      // Obtener therapist_id de la primera cita (todas son del mismo terapeuta)
+      if (appointmentsData.length > 0 && !therapistId) {
+        const firstAppointment = appointmentsData[0]
+        if (firstAppointment.therapist_id) {
+          setTherapistId(firstAppointment.therapist_id)
+          console.log('👤 Therapist ID obtenido:', firstAppointment.therapist_id)
+        }
+      }
 
       // Cargar estado de asistencia GPS para cada cita
       const appointmentsPromises = appointmentsData.map(async (apt: Appointment) => {

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 import { useEffect, useState } from 'react'
 
 interface Patient {
@@ -36,49 +37,48 @@ export default function TomorrowAppointmentsPage() {
   const [appointments, setAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState<string | null>(null)
+  const [therapistId, setTherapistId] = useState<string | null>(null)
+
+  // Handlers para cambios en appointments
+  const handleAppointmentInsert = async (newAppointment: any) => {
+    console.log('📥 Nueva cita insertada (mañana):', newAppointment)
+    // Verificar si es para mañana
+    const appointmentDate = new Date(newAppointment.fecha_hora)
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    
+    const isTomorrow = appointmentDate.getDate() === tomorrow.getDate() &&
+                      appointmentDate.getMonth() === tomorrow.getMonth() &&
+                      appointmentDate.getFullYear() === tomorrow.getFullYear()
+    
+    if (isTomorrow) {
+      await loadAppointments()
+    }
+  }
+
+  const handleAppointmentUpdate = async (updatedAppointment: any) => {
+    console.log('🔄 Cita actualizada (mañana):', updatedAppointment)
+    await loadAppointments()
+  }
+
+  const handleAppointmentDelete = async (appointmentId: string) => {
+    console.log('🗑️ Cita eliminada (mañana):', appointmentId)
+    setAppointments(prev => prev.filter(apt => apt.id !== appointmentId))
+  }
 
   useEffect(() => {
     loadAppointments()
-
-    // Subscripción a cambios en tiempo real
-    const supabase = createClient()
-    
-    const channel = supabase
-      .channel('appointments-tomorrow-changes')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'appointments'
-        },
-        async (payload) => {
-          console.log('Nueva cita detectada (mañana):', payload)
-          
-          // Verificar si la cita es para mañana y para el usuario actual
-          const newAppointment = payload.new as any
-          const appointmentDate = new Date(newAppointment.fecha_hora)
-          const tomorrow = new Date()
-          tomorrow.setDate(tomorrow.getDate() + 1)
-          
-          // Comparar solo fecha (sin hora)
-          const isTomorrow = appointmentDate.getDate() === tomorrow.getDate() &&
-                            appointmentDate.getMonth() === tomorrow.getMonth() &&
-                            appointmentDate.getFullYear() === tomorrow.getFullYear()
-          
-          if (isTomorrow) {
-            // Recargar todas las citas para obtener datos completos con relaciones
-            await loadAppointments()
-          }
-        }
-      )
-      .subscribe()
-
-    // Cleanup: Desuscribirse cuando el componente se desmonte
-    return () => {
-      supabase.removeChannel(channel)
-    }
   }, [])
+
+  // Activar hook de appointments realtime
+  useAppointmentsRealtime(
+    {
+      onInsert: handleAppointmentInsert,
+      onUpdate: handleAppointmentUpdate,
+      onDelete: handleAppointmentDelete
+    },
+    therapistId || undefined
+  )
 
   const loadAppointments = async () => {
     try {
@@ -93,7 +93,18 @@ export default function TomorrowAppointmentsPage() {
       }
 
       const data = await response.json()
-      setAppointments(data.appointments)
+      const appointmentsData = data.appointments
+
+      // Obtener therapist_id de la primera cita
+      if (appointmentsData.length > 0 && !therapistId) {
+        const firstAppointment = appointmentsData[0]
+        if (firstAppointment.therapist_id) {
+          setTherapistId(firstAppointment.therapist_id)
+          console.log('👤 Therapist ID obtenido (mañana):', firstAppointment.therapist_id)
+        }
+      }
+
+      setAppointments(appointmentsData)
       setLoading(false)
     } catch (error) {
       console.error('Load appointments error:', error)

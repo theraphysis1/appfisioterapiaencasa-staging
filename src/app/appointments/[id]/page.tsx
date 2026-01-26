@@ -6,6 +6,7 @@ import { useRouter, useParams } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { GPSCapture } from '@/components/GPSCapture'
 import { checkIn, checkOut, getAttendanceByAppointment } from '@/lib/api/attendance'
+import { useAppointmentsRealtime } from '@/hooks/useAppointmentsRealtime'
 
 interface Patient {
   nombre: string
@@ -28,6 +29,11 @@ interface Appointment {
   observacion: string | null
   patients: Patient
   services: Service
+  // Campos calculados del backend
+  direccion_final: string
+  barrio_final: string
+  referencia_final: string | null
+  tiene_direccion_temporal: boolean
 }
 
 interface AttendanceRecord {
@@ -54,9 +60,38 @@ export default function AppointmentDetailPage() {
   const [processingCheckOut, setProcessingCheckOut] = useState(false)
   const [elapsedMinutes, setElapsedMinutes] = useState(0)
 
+  // Handler para actualización de esta cita específica
+  const handleAppointmentUpdate = async (updatedAppointment: any) => {
+    console.log('🔄 Cita actualizada en detalle:', updatedAppointment)
+    // Solo recargar si es la cita que estamos viendo
+    if (updatedAppointment.id === appointmentId) {
+      await loadAppointmentData()
+    }
+  }
+
+  const handleAppointmentDelete = async (deletedId: string) => {
+    console.log('🗑️ Cita eliminada en detalle:', deletedId)
+    // Si eliminaron la cita que estamos viendo, redirigir
+    if (deletedId === appointmentId) {
+      setError('Esta cita fue eliminada por el administrador')
+      setTimeout(() => {
+        router.push('/appointments/today')
+      }, 2000)
+    }
+  }
+
   useEffect(() => {
     loadAppointmentData()
   }, [appointmentId])
+
+  // Activar hook de appointments realtime para esta cita
+  useAppointmentsRealtime(
+    {
+      onUpdate: handleAppointmentUpdate,
+      onDelete: handleAppointmentDelete
+    }
+    // No pasamos therapistId para escuchar todas las actualizaciones
+  )
 
   // Timer para mostrar tiempo transcurrido
   useEffect(() => {
@@ -257,20 +292,35 @@ export default function AppointmentDetailPage() {
             <p className="text-slate-800">{appointment.services.nombre}</p>
           </div>
 
+          {/* Indicador de tipo de dirección */}
+          <div className="flex items-center gap-2 pb-2 border-b border-slate-200">
+            <span className="text-2xl" title={appointment.tiene_direccion_temporal ? 'Dirección temporal' : 'Dirección del domicilio'}>
+              {appointment.tiene_direccion_temporal ? '🏢' : '🏠'}
+            </span>
+            <span className="text-sm font-medium text-slate-600">
+              {appointment.tiene_direccion_temporal ? 'Dirección temporal' : 'Dirección del domicilio'}
+            </span>
+            {appointment.tiene_direccion_temporal && (
+              <span className="px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800">
+                Temporal
+              </span>
+            )}
+          </div>
+
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase mb-1">Barrio</p>
-            <p className="text-slate-800">{appointment.patients.barrio}</p>
+            <p className="text-slate-800">{appointment.barrio_final}</p>
           </div>
 
           <div>
             <p className="text-xs font-medium text-slate-500 uppercase mb-1">Dirección</p>
-            <p className="text-slate-800">{appointment.patients.direccion}</p>
+            <p className="text-slate-800">{appointment.direccion_final}</p>
           </div>
 
-          {appointment.patients.referencia && (
+          {appointment.referencia_final && (
             <div>
               <p className="text-xs font-medium text-slate-500 uppercase mb-1">Referencia</p>
-              <p className="text-slate-800">{appointment.patients.referencia}</p>
+              <p className="text-slate-800">{appointment.referencia_final}</p>
             </div>
           )}
 
