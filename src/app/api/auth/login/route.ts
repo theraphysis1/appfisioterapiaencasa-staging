@@ -32,10 +32,9 @@ export async function POST(request: Request) {
     // Verificar que el usuario sea un terapeuta
     const { data: therapist, error: therapistError } = await supabase
       .from('therapists')
-      .select('id, nombre, apellido, email')
+      .select('id, nombre, apellido, email, activo')
       .eq('user_id', authData.user.id)
       .single()
-
     if (therapistError || !therapist) {
       // Si no es terapeuta, cerrar sesión
       await supabase.auth.signOut()
@@ -45,10 +44,20 @@ export async function POST(request: Request) {
       )
     }
 
+    if (therapist.activo === false) {
+      // Terapeuta desactivado, cerrar sesión aunque las credenciales sean válidas
+      await supabase.auth.signOut()
+      return NextResponse.json(
+        { error: 'Tu cuenta ha sido desactivada. Contacta al administrador.' },
+        { status: 403 }
+      )
+    }
+
     return NextResponse.json({
       success: true,
       therapist,
     })
+    
   } catch (error) {
     console.error('Login error:', error)
     return NextResponse.json(
