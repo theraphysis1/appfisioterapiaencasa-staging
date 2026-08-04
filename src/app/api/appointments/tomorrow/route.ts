@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
+import { getBogotaDayRange } from '@/lib/utils/dateRangeBogota'
 
 export async function GET() {
   try {
@@ -29,11 +30,8 @@ export async function GET() {
       )
     }
 
-    // Calcular el rango de mañana (00:00:00 a 23:59:59)
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const startOfTomorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 0, 0, 0)
-    const endOfTomorrow = new Date(tomorrow.getFullYear(), tomorrow.getMonth(), tomorrow.getDate(), 23, 59, 59)
+    // Calcular el rango de mañana en hora Bogotá (00:00:00 a 23:59:59)
+    const { startISO, endISO } = getBogotaDayRange(1)
 
     // Obtener citas de mañana con datos relacionados
     const { data: appointments, error: appointmentsError } = await supabase
@@ -63,8 +61,8 @@ export async function GET() {
         )
       `)
       .eq('therapist_id', therapist.id)
-      .gte('fecha_hora', startOfTomorrow.toISOString())
-      .lte('fecha_hora', endOfTomorrow.toISOString())
+      .gte('fecha_hora', startISO)
+      .lte('fecha_hora', endISO)
       .order('fecha_hora', { ascending: true })
 
     if (appointmentsError) {
