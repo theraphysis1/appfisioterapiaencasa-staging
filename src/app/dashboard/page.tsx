@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { usePushNotifications } from '@/hooks/usePushNotifications'
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -9,6 +10,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [commissions, setCommissions] = useState({ total: 0, count: 0, month: '' })
   const [loadingCommissions, setLoadingCommissions] = useState(true)
+  usePushNotifications()
 
   useEffect(() => {
     checkAuth()

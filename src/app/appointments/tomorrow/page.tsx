@@ -143,6 +143,8 @@ export default function TomorrowAppointmentsPage() {
         return 'bg-green-100 text-green-800'
       case 'cancelada':
         return 'bg-red-100 text-red-800'
+      case 'pendiente_reagendar':
+        return 'bg-amber-100 text-amber-800'
       default:
         return 'bg-slate-100 text-slate-800'
     }
@@ -156,6 +158,8 @@ export default function TomorrowAppointmentsPage() {
         return 'Completada'
       case 'cancelada':
         return 'Cancelada'
+      case 'pendiente_reagendar':
+        return 'Pendiente Reagendar'
       default:
         return estado
     }
