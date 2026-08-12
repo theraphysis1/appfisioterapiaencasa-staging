@@ -27,7 +27,21 @@ self.addEventListener('push', (event) => {
     tag: payload.tag || undefined,
   }
 
-  event.waitUntil(self.registration.showNotification(title, options))
+  const showNotificationPromise = self.registration.showNotification(title, options)
+
+  // Confirmación silenciosa de entrega — no bloquea ni afecta la notificación visible.
+  // Si falla (sin internet, endpoint caído, etc.), simplemente no se confirma.
+  const confirmDeliveryPromise = payload.delivery_id
+    ? fetch('/api/push/confirm-delivery', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ delivery_id: payload.delivery_id })
+      }).catch((err) => {
+        console.error('Error confirmando entrega de push:', err)
+      })
+    : Promise.resolve()
+
+  event.waitUntil(Promise.all([showNotificationPromise, confirmDeliveryPromise]))
 })
 
 self.addEventListener('notificationclick', (event) => {

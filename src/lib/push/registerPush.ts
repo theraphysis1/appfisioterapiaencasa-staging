@@ -19,6 +19,45 @@ export function isPushSupported(): boolean {
     'Notification' in window
 }
 
+export function detectPlatform(): 'android' | 'ios' | 'desktop' | 'unknown' {
+  if (typeof navigator === 'undefined') return 'unknown'
+  const ua = navigator.userAgent
+
+  if (/android/i.test(ua)) return 'android'
+  if (/iphone|ipad|ipod/i.test(ua)) return 'ios'
+  // iPadOS 13+ en modo desktop se identifica como Mac con soporte táctil
+  if (/macintosh/i.test(ua) && navigator.maxTouchPoints > 1) return 'ios'
+  if (/windows|macintosh|linux/i.test(ua)) return 'desktop'
+
+  return 'unknown'
+}
+
+export function detectStandaloneMode(): boolean {
+  if (typeof window === 'undefined') return false
+
+  const androidOrDesktopStandalone = window.matchMedia('(display-mode: standalone)').matches
+  const iosStandalone = (window.navigator as { standalone?: boolean }).standalone === true
+
+  return androidOrDesktopStandalone || iosStandalone
+}
+
+export async function reportDeviceStatus(): Promise<void> {
+  try {
+    await fetch('/api/push/report-status', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        plataforma: detectPlatform(),
+        modo_standalone: detectStandaloneMode(),
+        push_soportado: isPushSupported()
+      })
+    })
+  } catch (error) {
+    // Nunca debe bloquear el resto del flujo de push
+    console.error('Error reportando estado de dispositivo:', error)
+  }
+}
+
 export async function registerServiceWorker(): Promise<ServiceWorkerRegistration | null> {
   if (!isPushSupported()) return null
 
@@ -63,7 +102,9 @@ export async function saveSubscriptionToServer(subscription: PushSubscription): 
       body: JSON.stringify({
         endpoint: subJson.endpoint,
         keys: subJson.keys,
-        user_agent: navigator.userAgent
+        user_agent: navigator.userAgent,
+        plataforma: detectPlatform(),
+        modo_standalone: detectStandaloneMode()
       })
     })
 
@@ -75,6 +116,10 @@ export async function saveSubscriptionToServer(subscription: PushSubscription): 
 }
 
 export async function setupPushNotifications(): Promise<{ success: boolean; reason?: string }> {
+  // Se reporta SIEMPRE, incluso si no hay soporte de push (ej. iOS sin instalar).
+  // Es lo único que permite al Admin identificar a estos terapeutas en el panel.
+  await reportDeviceStatus()
+
   if (!isPushSupported()) {
     return { success: false, reason: 'not_supported' }
   }
