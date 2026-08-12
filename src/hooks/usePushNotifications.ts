@@ -5,7 +5,7 @@ import { setupPushNotifications } from '@/lib/push/registerPush'
 
 type PushStatus = 'idle' | 'setting_up' | 'ready' | 'unsupported' | 'denied' | 'error'
 
-export function usePushNotifications() {
+export function usePushNotifications(enabled: boolean = true) {
   const [status, setStatus] = useState<PushStatus>('idle')
 
   const runSetup = useCallback(async () => {
@@ -26,8 +26,9 @@ export function usePushNotifications() {
   }, [])
 
   useEffect(() => {
+    if (!enabled) return
     runSetup()
-  }, [runSetup])
+  }, [enabled, runSetup])
 
   return { status, retry: runSetup }
 }
