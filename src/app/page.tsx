@@ -54,7 +54,7 @@ export default function LoginPage() {
             />
           </div>
           <h1 className="text-3xl font-bold text-slate-800">Fisioterapia en Casa</h1>
-          <p className="text-slate-600 mt-2">Acceso para Terapeutas</p>
+          <p className="text-slate-600 mt-2">Acceso para Terapeutas.</p>
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-6">
